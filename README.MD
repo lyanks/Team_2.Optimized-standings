@@ -21,10 +21,15 @@ This approach aims to develop a more equitable ranking system and package it in 
 1. Download the `Dockerfile` for this repository.  
 2. Open a terminal in the project directory.  
 3. Build the Docker image:
-
-'''bash
+```bash
 docker build -t optimized_standings .
-'''
+```
+4. Run the program interactively:
+```bash
+docker run -it optimized_standings
+```
+
+
 
 ## Input & Output
 
