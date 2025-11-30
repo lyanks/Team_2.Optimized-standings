@@ -22,7 +22,7 @@ This approach aims to develop a more equitable ranking system and package it in 
 2. Open a terminal in the project directory.  
 3. Build the Docker image:
 
-```bash
+'''bash
 docker build -t optimized_standings .
 '''
 
