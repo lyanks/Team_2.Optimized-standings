@@ -38,10 +38,10 @@ docker run -it optimized_standings
 The program expects a CSV file containing match history.
 To avoid duplicates or formatting conflicts, each row must follow the format:
 ```csv
-Winner, Loser
-Teem A, Teem B
-Teem B, Teem C
-Teem C, Teem A
+Winner Loser
+Teem A Teem B
+Teem B Teem C
+Teem C Teem A
 ```
 
 **Output:**  
