@@ -12,3 +12,14 @@ def read_income(path: str) -> dict:
             if looser not in matches:
                 matches[looser] = set()
             matches[looser].add(winner)
+
+
+def ranking_table(losers: dict) -> dict:
+    average_point = 1/len(losers)
+    start_leaderboard = {}
+    for name in losers:
+            start_leaderboard[name] = average_point
+
+
+    for i in range(100):
+        loos_name = losers
