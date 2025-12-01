@@ -35,9 +35,14 @@ docker run -it optimized_standings
 
 **Input:**  
 
+Програма отримує на вхід CSV-файл з історією матчів. 
+Щоб уникнути дублів та помилок через різний стиль запису, алгоритм зчитує рядки у форматі Winner, Loser.
 
 **Output:**  
 
+Після завершення всіх ітерацій алгоритм повертає словник (dictionary) 
+із фінальними рейтингами команд. Цей словник сортується за спаданням 
+значень і передається в окрему функцію візуалізації, яка формує красиву таблицю і виводить її результат у консоль
 
 ---
 
@@ -47,12 +52,11 @@ docker run -it optimized_standings
 ---
 
 ## Work Distribution 
-(For now)
 
-| Team Member         | Responsibility                 |
-|---------------------|--------------------------------|
-| Anna Kravchenko     | Docker environment setup       |
-| Karina Madiar       | CLI + Tests                    |
-| Ulyana Krushchyk    | Algorithm implementation       |
-| Yura Melnyk         | Algorithm implementation       |
-| Alina Derevyagina   | Visualization and output       |
+| Team Member       | Responsibility                   |
+|-------------------|----------------------------------|
+| Anna Kravchenko   | Docker environment setup         |
+| Karina Madiar     | CLI + Tests                      |
+| Uliana Kryshchyk  | Algorithm implementation + Tests |
+| Yura Melnyk       | Algorithm implementation         |
+| Alina Derevyagina | Visualization and output         |
