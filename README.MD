@@ -35,14 +35,19 @@ docker run -it optimized_standings
 
 **Input:**  
 
-Програма отримує на вхід CSV-файл з історією матчів. 
-Щоб уникнути дублів та помилок через різний стиль запису, алгоритм зчитує рядки у форматі Winner, Loser.
+The program expects a CSV file containing match history.
+To avoid duplicates or formatting conflicts, each row must follow the format:
+```csv
+Winner, Loser
+Teem A, Teem B
+Teem B, Teem C
+Teem C, Teem A
+```
 
 **Output:**  
 
-Після завершення всіх ітерацій алгоритм повертає словник (dictionary) 
-із фінальними рейтингами команд. Цей словник сортується за спаданням 
-значень і передається в окрему функцію візуалізації, яка формує красиву таблицю і виводить її результат у консоль
+After completing the PageRank iterations, the algorithm returns a dictionary containing the final team ratings.
+This dictionary is sorted in descending order and passed to a visualization function, which generates a clean, readable table and prints it to the console.
 
 ---
 
