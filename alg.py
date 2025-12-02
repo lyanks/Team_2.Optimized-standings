@@ -1,5 +1,5 @@
 a = {}
-a[22] = [1,2]
+a[22] = 3
 print(a)
 
-print(list(a))
+print(a[22] + 1)

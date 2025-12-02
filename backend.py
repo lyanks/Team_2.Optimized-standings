@@ -1,11 +1,10 @@
 import random
-
+import time
 
 def single_cycle():
     pass
 
-
-def read_income(path: str) -> dict:
+def read_matches(path: str) -> dict:
     matches = {}
     all_teams = set()
     with open(path, 'r', encoding='utf-8') as table:
@@ -23,32 +22,29 @@ def read_income(path: str) -> dict:
     return matches, all_teams
 
 
-def ranking_table(matches: dict, all_teams: set) -> dict:
-    COEF = 0.85
+def ranking_table(matches: dict, all_teams: set, coef = 0.85) -> dict:
+    # COEF = 0.85
     num_of_command = len(all_teams)
-    average_point = 1/num_of_command
-    base_bonus = (1 - COEF)/num_of_command
-    start_leaderboard = {}
+    base_bonus = (1 - coef)/num_of_command
 
-    for name in all_teams:
-        start_leaderboard[name] = average_point
+    start_leaderboard = {name: 1/num_of_command for name in all_teams}
 
-
-    for i in range(100):
+    for _ in range(100):
         new_leaderboard = {name: base_bonus for name in all_teams}
         for name, winners in matches.items():
             loser_points = start_leaderboard[name]
             loser_loos = len(winners)
+            share = (loser_points / loser_loos) * coef 
             for w_nam in winners:
-                new_leaderboard[w_nam] += COEF * (loser_points/loser_loos)
+                new_leaderboard[w_nam] += share
         start_leaderboard = new_leaderboard
     return start_leaderboard
 
-aaa = read_income("test_matches.csv")
+aaa = read_matches("test_matches.csv")
 a = aaa[0]
 aa = aaa[1]
 
-print(ranking_table(a, aa))
+# print(ranking_table_while(a, aa))
 
 
 def generate_random_table() -> str | None:
