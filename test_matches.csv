@@ -1,0 +1,11 @@
+Boss,Worker1
+Boss,Worker2
+Boss,Worker3
+Boss,Worker4
+Boss,Worker5
+Killer,Boss
+Worker1,Killer
+Worker2,Killer
+Worker3,Killer
+Worker4,Killer
+Worker5,Killer
