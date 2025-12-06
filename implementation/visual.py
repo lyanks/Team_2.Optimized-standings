@@ -274,5 +274,6 @@ def animate_matches(matches, teams):
 
 
 if __name__ == "__main__":
-    matches, teams = read_matches("data/new_table.csv")
+    # matches, teams = read_matches("data/new_table.csv")
+    matches, teams = read_matches("data/test_matches.csv")
     animate_matches(matches, teams)
