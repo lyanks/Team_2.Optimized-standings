@@ -19,7 +19,7 @@ This approach aims to develop a more equitable ranking system and package it in 
 ## How to Run the Program
 
 
-1. Download the `start.py` for this repository.  
+1. Download the `start.py` from this repository.  
 2. Open a terminal in the project directory.
 3. Run the program interactively:
 ```bash
