@@ -60,6 +60,5 @@ def main():
     matches = read_matches(args.file)
     ratings = compute_rankings(matches)
     print_standings(ratings)
-
 if __name__ == "__main__":
     main()
