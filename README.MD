@@ -18,15 +18,12 @@ This approach aims to develop a more equitable ranking system and package it in 
 
 ## How to Run the Program
 
-1. Download the `Dockerfile` for this repository.  
-2. Open a terminal in the project directory.  
-3. Build the Docker image:
+
+1. Download the `start.py` for this repository.  
+2. Open a terminal in the project directory.
+3. Run the program interactively:
 ```bash
-docker build -t optimized_standings .
-```
-4. Run the program interactively:
-```bash
-docker run -it optimized_standings
+python start.py
 ```
 
 
