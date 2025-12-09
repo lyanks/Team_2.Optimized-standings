@@ -2,17 +2,22 @@
 Organise and orchestrate the program
 '''
 import subprocess
+from pathlib import Path
 
 def main():
     '''
     Docstring for main
     '''
-    path_to_data = input()
-    path_to_data = "data/" + path_to_data  # Твоя змінна зі шляхом
+    input_dir = Path("//app//data")
+
+    files = [f for f in input_dir.iterdir() if f.is_file()]
     path_to_script = "implementation/visual.py"
 
-    # Передаємо шлях до visual.py як аргумент
-    command = ["python", path_to_script, path_to_data]
+    input_file_path_str = files[0].as_posix()
+
+    print(f"Передаю файл для обробки: {input_file_path_str}")
+
+    command = ["python", path_to_script, input_file_path_str]
 
     try:
         subprocess.run(command, check=True)

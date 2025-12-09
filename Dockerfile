@@ -10,11 +10,10 @@ WORKDIR /app
 # clone repo to docher inside app
 RUN git clone https://github.com/lyanks/Team_2.Optimized-standings.git .
 
-# Copy local data file (буде доданий перед build)
-COPY data/ ./data/
+# install python deps
+RUN pip install --no-cache-dir -r requirements.txt
 
-# install requirements (will write later)
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+RUN mkdir -p /app/data /app/frames
 
 # Run file (for now test file)
 CMD ["python", "main.py"]
