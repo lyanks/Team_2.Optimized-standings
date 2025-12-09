@@ -1,29 +1,59 @@
+'''start of whole program'''
 import os
 import subprocess
 import shlex
 
 def main():
+    '''main'''
     print("Введи повний шлях до файлу:")
-    local_file = input("Шлях до файлу: ").strip()
+    input_datafile = input("Шлях до файлу: ").strip()
 
-    if not os.path.isfile(local_file):
+    if not os.path.isfile(input_datafile):
         print("Файлу не існує! Перевір шлях і спробуй ще раз.")
         return
 
-    local_file = os.path.abspath(local_file)
+    input_datafile_dir = os.path.dirname(input_datafile)
+    input_datafile = os.path.abspath(input_datafile)
 
-    print("Створюю Docker image з файлом:")
-    print(local_file)
+    local_output_dir = os.path.join(os.getcwd(), 'output')
+    os.makedirs(local_output_dir, exist_ok=True)
+    print(f"Результати будуть збережені у локальній теці: {local_output_dir}")
 
-    # Команда docker build
-    cmd = f'docker build --build-arg LOCALFILE="{local_file}" -t standings .'
-    print(cmd)
+    container_data_dir = "/app/data"
+    container_frames_dir = "/app/frames"
+
+    container_input_path = container_data_dir
+
+    print(f"\nСтворюю Docker image... з файлом {input_datafile}")
+
+    build_cmd = 'docker build -t standings .'
 
     try:
-        subprocess.run(shlex.split(cmd), check=True)
+        subprocess.run(shlex.split(build_cmd), check=True)
     except subprocess.CalledProcessError as e:
-        print("Помилка створення Docker образу:")
+        print(f"Помилка створення Docker образу. {e}")
+        return
+
+    run_cmd = (
+        f'docker run --rm '
+        '--name standings_proc '
+        f'-v "{input_datafile_dir}":"{container_input_path}":ro '
+        f'-v "{local_output_dir}":"{container_frames_dir}" '
+        f'standings')
+
+    print("\nЗапускаю Docker контейнер...")
+    print(f"Команда: {run_cmd}")
+
+    try:
+        subprocess.run(run_cmd, shell=True, check=True)
+    except subprocess.CalledProcessError as e:
+        print("Помилка запуску Docker контейнера:")
         print(e)
+
+    print(f"\n✅ Завершено. Результати (frames) у теці: {local_output_dir}")
+
+    # show visualiztion from output directory
+
 
 if __name__ == "__main__":
     main()
