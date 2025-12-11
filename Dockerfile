@@ -15,5 +15,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir -p /app/data /app/frames
 
-# Run file (for now test file)
+# Run file
 CMD ["python", "main.py"]
