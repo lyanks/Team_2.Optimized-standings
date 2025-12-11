@@ -1,83 +1,132 @@
 import matplotlib.pyplot as plt
-import matplotlib.patheffects as pe
-from matplotlib.patches import Circle, FancyArrowPatch
+from matplotlib.patches import Circle, FancyArrowPatch, FancyBboxPatch
 import numpy as np
 import math
-import random
 import os
 import csv
-import sys # ДОДАНО: Для зчитування аргументів командного рядка
-
-# Спроба імпорту вашої функції розрахунку
-# Переконайтеся, що файли compare.py та backend.py доступні
-try:
-    from compare import ranking_table_while
-except ImportError:
-    # Заглушка, якщо файлів немає поруч
-    def ranking_table_while(matches, teams):
-        return {t: 1.0/len(teams) for t in teams}, 1
 
 # ==========================================
-# 1. НАЛАШТУВАННЯ СТИЛУ
+# PAGERANK АЛГОРИТМ
+# ==========================================
+
+def calculate_pagerank(matches_dict, teams, damping=0.85, iterations=100):
+    """
+    Розраховує PageRank для команд на основі перемог.
+    matches_dict: {loser: {winners who beat them}}
+    """
+    n = len(teams)
+    if n == 0:
+        return {}
+
+    teams_list = list(teams)
+    team_idx = {t: i for i, t in enumerate(teams_list)}
+
+    # Ініціалізація рівномірно
+    scores = np.ones(n) / n
+
+    # Будуємо матрицю переходів
+    # Якщо A переміг B, то B "передає" свій рейтинг A
+    out_degree = {t: 0 for t in teams}
+
+    for loser, winners in matches_dict.items():
+        out_degree[loser] = len(winners)
+
+    # PageRank ітерації
+    for _ in range(iterations):
+        new_scores = np.ones(n) * (1 - damping) / n
+
+        for loser, winners in matches_dict.items():
+            if out_degree[loser] > 0:
+                loser_idx = team_idx[loser]
+                contribution = damping * scores[loser_idx] / out_degree[loser]
+
+                for winner in winners:
+                    winner_idx = team_idx[winner]
+                    new_scores[winner_idx] += contribution
+
+        # Для команд без поразок - розподіляємо рівномірно
+        dangling_sum = 0
+        for t in teams:
+            if t not in matches_dict or len(matches_dict.get(t, set())) == 0:
+                dangling_sum += scores[team_idx[t]]
+
+        new_scores += damping * dangling_sum / n
+        scores = new_scores
+
+    # Нормалізуємо
+    scores = scores / scores.sum()
+
+    return {teams_list[i]: scores[i] for i in range(n)}
+
+# ==========================================
+# СТИЛЬ
 # ==========================================
 STYLE = {
-    "bg": "#f9f9f9",
-    "cmap": "viridis",
-    "arrow_color_current": "#e74c3c", # Червоний для останнього матчу
-    "arrow_color_history": "#7f8c8d", # Сірий для історії
-    "text_color": "white",
-    "outline_color": "#2c3e50",
+    "bg": "#FADEC9",
+    "arrow_color": "#1a1a1a",
+    "text_color": "#1a1a1a",
+    "portal_color": "#1a1a1a",
     "font_size": 11,
-    "shadow_alpha": 0.25,
-    "team_colors": {
-        "green_unique": "#138D75",     # 1. Смарагдовий (ТІЛЬКИ #1)
-        "green_secondary": "#2ecc71",  # 2. Яскраво-зелений (Високий рейтинг)
-        "orange": "#e67e22",           # 3. Помаранчевий (Середній)
-        "violet": "#8e44ad",           # 4. Фіолетовий (Низький)
-    },
 }
 
-BASE_POSITIONS = {}
+def get_team_color(rank_ratio):
+    """Колір на основі рангу (0 = топ, 1 = низ)"""
 
-# ==========================================
-# 2. ФІЗИКА
-# ==========================================
+    if rank_ratio < 0.33:
+        # Топ-команди: зелений (раніше був жовтий)
+        return {"inner": "#7DFF7A", "outer": "#1F8A0A"}  # зелений
 
-def get_base_positions(teams, radius=50, seed=42):
-    """Визначає початкові позиції команд по спіралі."""
-    global BASE_POSITIONS
-    if BASE_POSITIONS and set(BASE_POSITIONS.keys()) >= set(teams):
-        return
+    elif rank_ratio < 0.66:
+        # Середні команди: тепер ЖОВТИЙ замість оранжевого
+        return {"inner": "#FFE66D", "outer": "#E1B800"}  # жовтий
 
-    random.seed(seed)
-    phi = math.pi * (3 - math.sqrt(5))
+    else:
+        # Нижні команди: червоний (замінено замість фіолетового)
+        return {"inner": "#FF4C4C", "outer": "#8A0000"}  # червоний
 
-    current_teams = list(teams)
-    for i, t in enumerate(current_teams):
-        if t not in BASE_POSITIONS:
-            angle = i * phi
-            r = radius * (0.6 + 0.6 * (i / (len(current_teams) + 1)))
-            BASE_POSITIONS[t] = np.array([r * math.cos(angle), r * math.sin(angle)])
+def draw_sphere(ax, center, radius, colors, zorder=5):
+    """Малює сферу з градієнтом"""
+    cx, cy = center
+    n_rings = 35
 
-def compute_radii(scores, min_r=8, max_r=25):
-    """Розраховує радіуси бульбашок відповідно до рейтингу."""
-    vals = np.array(list(scores.values()))
-    if len(vals) == 0: return {}
+    for i in range(n_rings, 0, -1):
+        ratio = i / n_rings
+        r = radius * ratio
 
-    s_min, s_max = vals.min(), vals.max()
-    radii = {}
+        c_inner = np.array(plt.cm.colors.to_rgb(colors["inner"]))
+        c_outer = np.array(plt.cm.colors.to_rgb(colors["outer"]))
 
-    for t, s in scores.items():
-        if s_max == s_min:
-            norm = 0.5
-        else:
-            norm = (s - s_min) / (s_max - s_min)
-        radii[t] = min_r + norm * (max_r - min_r)
-    return radii
+        t = ratio ** 0.7
+        color = c_outer * (1 - t) + c_inner * t
 
-def resolve_collisions(coords, radii, teams, iterations=30):
-    """Алгоритм для уникнення перекриття бульбашок."""
-    pos = coords.copy()
+        circle = Circle((cx, cy), r, facecolor=color, edgecolor='none', zorder=zorder)
+        ax.add_patch(circle)
+
+def get_circular_positions(scores, radii):
+    """Розташування по колу"""
+    sorted_teams = sorted(scores.keys(), key=lambda t: scores[t], reverse=True)
+    n = len(sorted_teams)
+
+    if n == 0:
+        return {}
+    if n == 1:
+        return {sorted_teams[0]: np.array([0.0, 0.0])}
+
+    max_r = max(radii.values()) if radii else 30
+    circle_radius = max(90, n * max_r * 0.6)
+
+    positions = {}
+    for i, team in enumerate(sorted_teams):
+        angle = 2 * math.pi * i / n - math.pi / 2
+        x = circle_radius * math.cos(angle)
+        y = circle_radius * math.sin(angle)
+        positions[team] = np.array([x, y])
+
+    return positions
+
+def resolve_collisions(coords, radii, iterations=60):
+    """Розсування кіл"""
+    pos = {k: v.copy() for k, v in coords.items()}
     keys = list(pos.keys())
 
     for _ in range(iterations):
@@ -89,260 +138,272 @@ def resolve_collisions(coords, radii, teams, iterations=30):
 
                 diff = p2 - p1
                 dist = np.linalg.norm(diff)
-                # ЗБІЛЬШЕНА МІНІМАЛЬНА ВІДСТАНЬ ДЛЯ РОЗРІДЖЕННЯ ГРАФА
-                min_dist = r1 + r2 + 8.0
+                min_dist = r1 + r2 + 8
 
-                if dist < min_dist:
-                    if dist == 0:
-                        diff = np.random.randn(2)
-                        dist = 0.1
-
+                if dist < min_dist and dist > 0:
                     overlap = (min_dist - dist) * 0.5
                     correction = (diff / dist) * overlap
-                    pos[t1] -= correction
-                    pos[t2] += correction
+                    pos[t1] = pos[t1] - correction
+                    pos[t2] = pos[t2] + correction
+
     return pos
 
-# ==========================================
-# 3. МАЛЮВАННЯ
-# ==========================================
+def compute_radii(scores, min_r=18, max_r=55):
+    """Радіуси на основі score"""
+    vals = np.array(list(scores.values()))
+    if len(vals) == 0:
+        return {}
 
-def get_team_color(scores):
-    """Призначає колір відповідно до рейтингу (Топ-1 та 3 групи)."""
-    sorted_teams_by_score = sorted(scores.keys(), key=lambda t: scores[t])
-    N = len(sorted_teams_by_score)
+    s_min, s_max = vals.min(), vals.max()
+    radii = {}
 
-    color_map = {}
-    if N == 0: return {}
+    for t, s in scores.items():
+        if s_max == s_min:
+            norm = 0.5
+        else:
+            norm = (s - s_min) / (s_max - s_min)
+        radii[t] = min_r + (norm ** 0.5) * (max_r - min_r)
 
-    # 1. УНІКАЛЬНИЙ ТОП-1
-    top_team = sorted_teams_by_score[-1]
-    color_map[top_team] = STYLE["team_colors"]["green_unique"]
+    return radii
 
-    if N > 1:
-        num_remaining = N - 1
-        T = num_remaining // 3
+def draw_portal(ax, x_pos, y_range):
+    """Крива портала"""
+    y = np.linspace(y_range[0], y_range[1], 100)
+    x = x_pos + 10 * np.sin(y * 0.03)
+    ax.plot(x, y, color=STYLE["portal_color"], lw=2.5, alpha=0.7, zorder=1)
 
-        for i in range(num_remaining):
-            # Перебір решти команд від низу догори
-            team_r = sorted_teams_by_score[i]
+def draw_new_node_box(ax, center, radius):
+    """Новий вузол у рамці"""
+    x, y = center
+    box_size = radius * 3
 
-            if i < T:
-                color_map[team_r] = STYLE["team_colors"]["violet"]      # Низький рейтинг
-            elif i < 2 * T:
-                color_map[team_r] = STYLE["team_colors"]["orange"]      # Середній
-            else:
-                color_map[team_r] = STYLE["team_colors"]["green_secondary"] # Високий
+    rect = FancyBboxPatch(
+        (x - box_size/2, y - box_size/2),
+        box_size, box_size,
+        boxstyle="square,pad=0.02",
+        facecolor='none',
+        edgecolor=STYLE["portal_color"],
+        lw=1.5, zorder=3
+    )
+    ax.add_patch(rect)
 
-    return color_map
+    colors = {"inner": "#FF8C42", "outer": "#D64A00"}
+    draw_sphere(ax, center, radius, colors, zorder=4)
 
+    ax.text(x, y - box_size/2 - 8, "new node",
+            ha='center', va='top', fontsize=9,
+            color=STYLE["text_color"], style='italic')
 
-def draw_frame(ax, scores, history_matches, coords, radii, total_matches, is_final_static=False):
+def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
+               new_teams=None, is_final_static=False, match_num=0):
+    """Малює кадр"""
     ax.clear()
     ax.set_facecolor(STYLE["bg"])
     ax.axis('off')
     ax.set_aspect('equal')
 
-    # АВТО-МАСШТАБ З ДОДАТКОВИМ ПРОСТОРОМ (ДЛЯ ВІЛЬНОГО ПОЛЯ)
+    # Межі
     all_x = [p[0] for p in coords.values()]
     all_y = [p[1] for p in coords.values()]
 
     if all_x and all_y:
-        max_coord = max(max(np.abs(all_x)), max(np.abs(all_y)))
-        max_radius = max(radii.values()) if radii else 20
-        # ЗБІЛЬШЕНО ВІДСТУП: 40 замість 25
-        limit = max(110, max_coord + max_radius + 40)
+        max_r = max(radii.values()) if radii else 25
+        x_min = min(all_x) - max_r - 40
+        x_max = max(all_x) + max_r + 100
+        y_min = min(all_y) - max_r - 50
+        y_max = max(all_y) + max_r + 50
     else:
-        limit = 110
+        x_min, x_max = -150, 200
+        y_min, y_max = -120, 120
 
-    ax.set_xlim(-limit, limit)
-    ax.set_ylim(-limit, limit)
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
 
-    color_map = get_team_color(scores)
-    # Сортуємо команди за розміром, щоб менші не ховалися за великими
-    sorted_teams = sorted(scores.keys(), key=lambda t: radii[t], reverse=True)
+    # Заголовок
+    ax.text((x_min + x_max) / 2, y_max - 5, "Tournament PageRank",
+            ha='center', va='top', fontsize=20, fontweight='bold',
+            color=STYLE["text_color"])
 
-    # --- 1. СТРІЛКИ (МАТЧІ) ---
+    # Ранги
+    sorted_teams = sorted(scores.keys(), key=lambda t: scores[t], reverse=True)
+    n = len(sorted_teams)
+    rank_map = {t: i / max(n - 1, 1) for i, t in enumerate(sorted_teams)}
+
+    # Портал і нові вузли
+    portal_x = x_max - 60
+
+    if new_teams and len(new_teams) > 0:
+        draw_portal(ax, portal_x, (y_min + 30, y_max - 40))
+
+        display_new = new_teams[-3:]
+        y_positions = [50, 0, -50]
+
+        for i, team in enumerate(display_new):
+            if i < len(y_positions):
+                node_center = np.array([portal_x + 35, y_positions[i]])
+                draw_new_node_box(ax, node_center, 12)
+
+                if team in coords:
+                    target = coords[team]
+                    target_r = radii.get(team, 15)
+
+                    diff = node_center - target
+                    dist = np.linalg.norm(diff)
+                    if dist > 0:
+                        dir_vec = diff / dist
+                        line_start = target + dir_vec * target_r
+                        line_end = np.array([node_center[0] - 18, node_center[1]])
+
+                        ax.plot([line_start[0], line_end[0]],
+                               [line_start[1], line_end[1]],
+                               '--', color=STYLE["portal_color"], lw=1.5, alpha=0.5, zorder=16)
+
+    # Стрілки
     for idx, (winner, loser) in enumerate(history_matches):
         if winner in coords and loser in coords:
             p1, p2 = coords[winner], coords[loser]
-            is_last_in_list = (idx == len(history_matches) - 1)
+            r1, r2 = radii.get(winner, 15), radii.get(loser, 15)
 
-            if is_last_in_list and not is_final_static:
-                # АКТИВНИЙ МАТЧ (ЧЕРВОНИЙ, ТОВСТИЙ)
-                c_color = STYLE["arrow_color_current"]
-                c_alpha = 1.0
-                c_lw = 4.0
-                c_zorder = 2
-            else:
-                # ІСТОРІЯ (СІРИЙ, ТОНШИЙ)
-                c_color = STYLE["arrow_color_history"]
-                c_alpha = 0.7
-                c_lw = 2.5
-                c_zorder = 1
-
-            # Розрахунок точки старту/кінця стрілки (щоб не починалася в центрі бульбашки)
             diff = p2 - p1
             dist = np.linalg.norm(diff)
+
             if dist > 0:
                 dir_vec = diff / dist
-                start_p = p1 + dir_vec * radii[winner]
-                end_p = p2 - dir_vec * radii[loser]
+                start_p = p1 + dir_vec * r1
+                end_p = p2 - dir_vec * r2
             else:
-                start_p, end_p = p1, p2
+                continue
+
+            is_current = (idx == len(history_matches) - 1) and not is_final_static
 
             arrow = FancyArrowPatch(
                 posA=start_p, posB=end_p,
-                arrowstyle=f'-|>,head_width=1.2,head_length=1.0',
-                color=c_color, lw=c_lw, alpha=c_alpha, zorder=c_zorder
+                arrowstyle='-|>,head_width=1.0,head_length=0.6',
+                color='#e74c3c' if is_current else STYLE["arrow_color"],
+                lw=2.5 if is_current else 2.0,
+                alpha=1.0 if is_current else 0.75,
+                zorder=15
             )
             ax.add_patch(arrow)
 
-    # --- 2. БУЛЬБАШКИ (ВУЗЛИ) ---
-    for team in sorted_teams:
+    # Сфери
+    for team in sorted(scores.keys(), key=lambda t: radii[t]):
         p = coords[team]
         r = radii[team]
         score = scores[team]
 
-        color = color_map.get(team, STYLE["team_colors"]["violet"])
+        colors = get_team_color(rank_map[team])
+        draw_sphere(ax, p, r, colors)
 
-        # 1. Світіння (задній план)
-        glow = Circle(p, r*1.15, color=color, alpha=STYLE["shadow_alpha"], zorder=3)
-        ax.add_patch(glow)
-
-        # 2. Коло (основний вузол)
-        circle = Circle(p, r, facecolor=color, edgecolor=STYLE["outline_color"], lw=2.5, zorder=4)
-        ax.add_patch(circle)
-
-        # 3. ТЕКСТ (назва та відсоток)
         label = f"{team}\n{score*100:.1f}%"
+        ax.text(p[0], p[1], label, ha='center', va='center',
+               fontsize=STYLE["font_size"], fontweight='bold',
+               color=STYLE["text_color"], zorder=20)
 
-        txt = ax.text(p[0], p[1], label, ha='center', va='center',
-                      fontsize=STYLE["font_size"], color=STYLE["text_color"],
-                      fontweight='bold', zorder=5)
-        # Додавання контуру до тексту для кращої читабельності
-        txt.set_path_effects([pe.withStroke(linewidth=3.5, foreground=STYLE["outline_color"])])
+    # Підпис
+    if is_final_static:
+        ax.text((x_min + x_max) / 2, y_min + 20, "🏆 FINAL RANKING 🏆",
+                ha='center', fontsize=16, fontweight='bold', color='#2c3e50')
+    elif history_matches:
+        last_w, last_l = history_matches[-1]
+        ax.text((x_min + x_max) / 2, y_min + 20,
+                f"⚔️ Match {match_num}/{total_matches}: {last_w} defeats {last_l}",
+                ha='center', fontsize=13, fontweight='bold', color='#c0392b')
 
-    # --- 3. ТЕКСТОВІ ПІДПИСИ ---
-    xlims = ax.get_xlim()
-    ylims = ax.get_ylim()
-    text_y = -limit + 10
-
-    if history_matches:
-        if is_final_static:
-             ax.text(0, text_y, "FINAL RANKING", ha='center', fontsize=14, fontweight='bold', color=STYLE["outline_color"])
-        else:
-            last_w, last_l = history_matches[-1]
-            ax.text(0, text_y, f"MATCH: {last_w} vs {last_l}", ha='center', fontsize=12, fontweight='bold', color=STYLE["outline_color"])
-
-    # Лічильник раундів
-    if not is_final_static and history_matches:
-        ax.text(xlims[1]*0.9, ylims[1]*0.9, f"Round {len(history_matches)}/{total_matches}",
-                ha='right', va='top', fontsize=12, color=STYLE["outline_color"])
-
-# ==========================================
-# 4. ЗАПУСК
-# ==========================================
-
-def run_visualization():
-    # 1. Зчитування аргументу командного рядка через sys.argv
-    if len(sys.argv) < 2:
-        print("Помилка: Необхідно передати шлях до вхідного CSV файлу.")
-        print("\nВикористання:")
-        print("python visual.py <шлях_до_файлу.csv>")
-        return
-
-    csv_path = sys.argv[1] # Шлях до файлу - це перший аргумент
-
+def run_visualization(csv_path="data/test_matches.csv"):
     if not os.path.exists(csv_path):
-        print(f"Помилка: файл '{csv_path}' не знайдено!")
-        print("\nПеревірте, чи правильно вказано шлях.")
+        print(f"Помилка: файл {csv_path} не знайдено!")
         return
 
-    # Налаштування вихідної папки
     output_dir = "frames"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    # Зчитування матчів з CSV
     raw_matches = []
-    try:
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            reader = csv.reader(f)
-            header = next(reader, None) # Пропускаємо заголовок
-            for row in reader:
-                if len(row) >= 2:
-                    w, l = row[0].strip(), row[1].strip()
-                    raw_matches.append((w, l))
-    except Exception as e:
-        print(f"Помилка зчитування CSV: {e}")
-        return
+    with open(csv_path, 'r', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        header = next(reader, None)
+        for row in reader:
+            if len(row) >= 2:
+                w, l = row[0].strip(), row[1].strip()
+                raw_matches.append((w, l))
 
-    print(f"Зчитано {len(raw_matches)} матчів з {csv_path}. Починаємо генерувати кадри...")
+    print(f"Зчитано {len(raw_matches)} матчів. Починаємо візуалізацію...\n")
 
     matches_dict = {}
     all_teams = set()
     total_matches = len(raw_matches)
 
-    fig, ax = plt.subplots(figsize=(10, 10))
-    prev_coords = {}
+    fig, ax = plt.subplots(figsize=(16, 12))
+    fig.patch.set_facecolor(STYLE["bg"])
 
     final_scores = {}
     final_coords = {}
     final_radii = {}
 
-    # 2. Основний цикл генерації кадрів
+    recently_added = []
+
     for i in range(total_matches):
         winner, loser = raw_matches[i]
 
-        all_teams.add(winner)
-        all_teams.add(loser)
+        new_this_round = []
+        for t in [winner, loser]:
+            if t not in all_teams:
+                all_teams.add(t)
+                new_this_round.append(t)
+                recently_added.append(t)
+
+        recently_added = recently_added[-5:]
 
         if loser not in matches_dict:
             matches_dict[loser] = set()
         matches_dict[loser].add(winner)
 
-        # Розрахунок рейтингу на поточному кроці
-        current_scores, _ = ranking_table_while(matches_dict, all_teams)
-
-        # Фізика та позиціонування
-        get_base_positions(all_teams)
-        target_coords = {t: BASE_POSITIONS[t] * 0.9 for t in all_teams}
-
-        # Інерція (плавність руху): 70% старої позиції, 30% нової
-        coords = {}
-        for t in all_teams:
-            if t in prev_coords:
-                coords[t] = prev_coords[t] * 0.7 + target_coords[t] * 0.3
-            else:
-                coords[t] = target_coords[t]
+        # Реальний PageRank
+        current_scores = calculate_pagerank(matches_dict, all_teams)
 
         radii = compute_radii(current_scores)
-        coords = resolve_collisions(coords, radii, list(all_teams))
-        prev_coords = coords.copy()
+        coords = get_circular_positions(current_scores, radii)
+        coords = resolve_collisions(coords, radii)
 
-        # Зберігаємо фінальні дані
         final_scores = current_scores
         final_coords = coords
         final_radii = radii
 
-        # Малюємо та зберігаємо поточний кадр
         history_so_far = raw_matches[:i+1]
-        draw_frame(ax, current_scores, history_so_far, coords, radii, total_matches, is_final_static=False)
+        draw_frame(ax, current_scores, history_so_far, coords, radii, total_matches,
+                  new_teams=recently_added if recently_added else None,
+                  is_final_static=False, match_num=i+1)
 
         fname = os.path.join(output_dir, f"step_{i+1:03d}.png")
-        plt.savefig(fname, dpi=100, bbox_inches='tight')
-        print(f"Збережено: {fname}")
+        plt.savefig(fname, dpi=120, bbox_inches='tight', facecolor=STYLE["bg"])
 
-    # === 3. ФІНАЛЬНИЙ СТАТИЧНИЙ КАДР ===
-    print("\nЗберігаємо фінальний результат...")
-    draw_frame(ax, final_scores, raw_matches, final_coords, final_radii, total_matches, is_final_static=True)
+        # Виводимо рейтинг
+        print(f"Match {i+1}: {winner} → {loser}")
+        sorted_scores = sorted(current_scores.items(), key=lambda x: x[1], reverse=True)
+        for rank, (team, score) in enumerate(sorted_scores, 1):
+            print(f"  {rank}. {team}: {score*100:.2f}%")
+        print()
+
+    # Фінальний кадр
+    print("=" * 50)
+    print("FINAL RANKING:")
+    print("=" * 50)
+    sorted_final = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
+    for rank, (team, score) in enumerate(sorted_final, 1):
+        print(f"{rank}. {team}: {score*100:.2f}%")
+
+
+    draw_frame(ax, final_scores, raw_matches, final_coords, final_radii,
+               total_matches, is_final_static=True)
 
     final_name = os.path.join(output_dir, "final_result.png")
-    plt.savefig(final_name, dpi=150, bbox_inches='tight')
+    plt.savefig(final_name, dpi=150, bbox_inches='tight', facecolor=STYLE["bg"])
 
-    print(f"Готово! Фінальний файл: {final_name}")
+    print(f"\nГотово! Фінальний файл: {final_name}")
     plt.close()
+
+    return final_name
 
 if __name__ == "__main__":
     run_visualization()
