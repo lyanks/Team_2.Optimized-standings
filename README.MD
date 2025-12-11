@@ -12,7 +12,7 @@ This approach aims to develop a more equitable ranking system and package it in 
 - Adjust team rankings using a PageRank algorithm.  
 - Docker setup for easy deployment.  
 - Command-line interface (CLI) for interaction.  
-- Optional visualization of standings.
+- Step-by-step visualization of standings.
 
 ---
 
