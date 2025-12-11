@@ -1,0 +1,6 @@
+winner,loser
+TeamA,LoserTeam
+TeamB,LoserTeam
+TeamC,LoserTeam
+TeamA,TeamB
+TeamB,TeamC
