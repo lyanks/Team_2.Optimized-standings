@@ -13,16 +13,16 @@ def ranking_table_while(matches: dict, all_teams: set, coef = 0.85, epsilon = 1e
         for name, winners in matches.items():
             loser_points = start_leaderboard[name]
             loser_loos = len(winners)
-            share = (loser_points / loser_loos) * coef 
+            share = (loser_points / loser_loos) * coef
             for w_nam in winners:
                 new_leaderboard[w_nam] += share
         delta = sum(abs(new_leaderboard[n] - start_leaderboard[n]) for n in all_teams)
         start_leaderboard = new_leaderboard
-        iterations += 1 
+        iterations += 1
 
         if delta < epsilon:
             break
-        
+
     return start_leaderboard, iterations
 
 
@@ -37,7 +37,7 @@ if __name__ == "__main__":
         res_for = ranking_table(matches_data, teams_data)
         time_for = time.time() - start_time
         print(f"FOR (100 ітерацій): {time_for:.5f} сек")
-        print(f"Кількість ітерацій FOR: 100") 
+        print(f"Кількість ітерацій FOR: 100")
 
         start_time = time.time()
         res_while, iterations_while = ranking_table_while(matches_data, teams_data)
