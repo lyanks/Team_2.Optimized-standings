@@ -27,7 +27,7 @@ You should also give it access to modify and read your files.
 
 
 1. Download the `start.py` and `Dockerfile` from this repository.
-2. Ensure 'start.py' and the 'Dockerfile' are in the same local directory.
+2. Ensure `start.py` and the `Dockerfile` are in the same local directory.
 3. Place your input data file (e.g., input_data.txt) in a seperate folder on your local system.
 4. Open a terminal in the directory where `start.py` and `Dockerfile` are.
 5. Run the program interactively:
