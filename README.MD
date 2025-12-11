@@ -71,6 +71,19 @@ User will receive on his local directory photos of progress itteration as well a
 
 ## Algorithm Overview
 
+PageRank Sports Ranking Project: Quick SummaryThis project tackles the flaw in standard sports rankings—where beating the worst team gives the same points as beating the best—by applying the PageRank algorithm to calculate a true "authority" score for each team.
+Project Idea: Rating AuthorityThe Graph: We turn the tournament into a graph. Teams are nodes. Edges are directed from Loser → Winner.
+The Core: When a team loses, it passes a chunk of its current score (rating) to the team that beat it. Simply put, you earn more points if you beat someone who already has a high rating.
+
+How The Algorithm Works
+The ranking score update relies on two key ideas:Opponent Strength: The winner collects a portion of the loser's rating. If you beat a top team (high score), you gain a lot. If you beat a weak team, you gain little.
+
+Exclusivity: The amount transferred is split among all the teams the loser lost to. If a loser only lost to you, you get all their available rating—that was a "costly" loss for them, and a big win for you. If they lose to everyone, their rating is spread thin, and you only get pennies.
+
+The Stabilizer (Dampening)The $d$ factor (our coefficient, usually $0.85$) acts as a system stabilizer. In every round, $15\%$ of the total rating is reset and given back to all teams equally. This guarantees every team has a minimum score and prevents leaders from running away with an unstable, impossibly high rating. The total rating in the system always sums up to 1.
+
+Code SnapshotData Setup (read_matches): Takes a CSV file and builds the graph as a dictionary: {Loser: {List of Winners}}. This structure makes it fast to calculate who pays whom.
+The Calculation (ranking_table, calculate_pagerank): We start with equal scores and run an iterative loop. In each step, every team's rating is completely recalculated based on the scores from the previous round.The Finish: The loop runs until the scores barely change anymore. The final, stable scores represent the team's true authoritative ranking.
 
 ---
 
