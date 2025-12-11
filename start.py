@@ -8,9 +8,18 @@ def main():
     print("Введи повний шлях до файлу:")
     input_datafile = input("Шлях до файлу: ").strip()
 
-    if not os.path.isfile(input_datafile):
-        print("Файлу не існує! Перевір шлях і спробуй ще раз.")
-        return
+    # if not os.path.isfile(input_datafile):
+    #     print("Файлу не існує! Перевір шлях і спробуй ще раз.")
+    #     return
+
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError(f"Файлу '{path}' не існує. Перевірте шлях.")
+
+    if not os.path.isfile(path):
+        raise argparse.ArgumentTypeError(f"'{path}' не є файлом. Вкажіть коректний файл.")
+
+    if not os.access(path, os.R_OK):
+        raise argparse.ArgumentTypeError(f"Файл '{path}' не можна прочитати. Немає дозволу.")
 
     input_datafile_dir = os.path.dirname(input_datafile)
     input_datafile = os.path.abspath(input_datafile)
