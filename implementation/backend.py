@@ -40,11 +40,11 @@ def ranking_table(matches: dict, all_teams: set, coef = 0.85) -> dict:
         start_leaderboard = new_leaderboard
     return start_leaderboard
 
-#aaa = read_matches("data/test_matches.csv")
-#a = aaa[0]
-#aa = aaa[1]
+aaa = read_matches("/Users/yurleomel/Documents/ProgrammingUCU/discra_lab2/Team_2.Optimized-standings/app/data/test_matches.csv")
+a = aaa[0]
+aa = aaa[1]
 
-# print(ranking_table_while(a, aa))
+print(ranking_table(a, aa))
 
 
 def generate_random_table() -> str | None:

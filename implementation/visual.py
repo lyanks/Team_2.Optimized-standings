@@ -9,7 +9,7 @@ import csv
 # PAGERANK АЛГОРИТМ
 # ==========================================
 
-def calculate_pagerank(matches_dict, teams, damping=0.85, iterations=100):
+def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
     """
     Розраховує PageRank для команд на основі перемог.
     matches_dict: {loser: {winners who beat them}}
@@ -32,7 +32,7 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, iterations=100):
         out_degree[loser] = len(winners)
 
     # PageRank ітерації
-    for _ in range(iterations):
+    while True:
         new_scores = np.ones(n) * (1 - damping) / n
 
         for loser, winners in matches_dict.items():
@@ -51,12 +51,18 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, iterations=100):
                 dangling_sum += scores[team_idx[t]]
 
         new_scores += damping * dangling_sum / n
+
+        delta = np.sum(np.abs(new_scores - scores))
         scores = new_scores
+
+        if delta < epsilon:
+            break
 
     # Нормалізуємо
     scores = scores / scores.sum()
 
     return {teams_list[i]: scores[i] for i in range(n)}
+
 
 # ==========================================
 # СТИЛЬ
