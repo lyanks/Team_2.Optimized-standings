@@ -15,6 +15,18 @@ This approach aims to develop a more equitable ranking system and package it in 
 - Step-by-step visualization of standings.
 
 ---
+## Project Structure
+
+```text
+.
+├── Dockerfile             # Docker configuration
+├── start.py               # CLI Orchestrator script
+├── implementation/
+│   ├── alg.py             # PageRank logic
+│   └── visual.py          # Matplotlib visualization
+├── data/                  # Input CSV files
+└── output/                # Resulting frames and images
+```
 
 ## How to Run the Program
 
@@ -35,12 +47,12 @@ You should also give it access to modify and read your files.
 python3 start.py
 ```
 6. The script will ask you to enter the full path to your input file:
-```bash
+```
 Введи повний шлях до файлу:
 Шлях до файлу: [ENTER THE ABSOLUTE PATH TO YOUR INPUT FILE HERE]
 ```
 7. When completed Docker running, the script will indicate where the results are saved:
-```bash
+```
 Результати будуть збережені у локальній теці: [PATH_TO_OUTPUT_DIRECTORY]
 ✅ Завершено. Результати (frames) у теці: [PATH_TO_OUTPUT_DIRECTORY]
 ```
@@ -54,10 +66,10 @@ python3 start.py
 The program expects a CSV file containing match history.
 To avoid duplicates or formatting conflicts, each row must follow the format:
 ```csv
-Winner Loser
-Teem A Teem B
-Teem B Teem C
-Teem C Teem A
+Winner,Loser
+Teem A,Teem B
+Teem B,Teem C
+Teem C,Teem A
 ```
 
 **Output:**  
@@ -71,8 +83,36 @@ User will receive on his local directory photos of progress itteration as well a
 
 ## Algorithm Overview
 
+We adapted the **PageRank algorithm** (originally designed by Google for ranking web pages) to the context of sports tournaments.
+
+1.  **Graph Construction:**
+    * **Nodes:** Represent teams.
+    * **Edges:** Represent match outcomes.
+    * **Direction:** The edge goes from the **Loser** to the **Winner**. This signifies that the Loser "votes" for the Winner's strength.
+
+2.  **Mathematics:**
+    The rank of a team $PR(A)$ is calculated iteratively:
+    $$PR(A) = \frac{1-d}{N} + d \sum_{v \in M(A)} \frac{PR(v)}{L(v)}$$
+
+    * $d$ is the **damping factor** (set to 0.85), ensuring the algorithm converges.
+    * $M(A)$ is the set of teams that lost to Team A.
+    * $L(v)$ is the number of losses suffered by team $v$.
+
+3.  **Logic:**
+    * If a strong team (with high PR) loses to you, they transfer a significant portion of their rank to you.
+    * If a weak team loses to you, your rank increases only slightly.
+    * This solves the problem where defeating a champion is valued the same as defeating an outsider in standard league tables.
 
 ---
+## Tech Stack
+
+* **Language:** Python 3.13
+* **Containerization:** Docker
+* **Core Libraries:**
+    * `numpy` (Vectorized matrix calculations)
+    * `matplotlib` (Custom force-directed graph visualization)
+---
+
 
 ## Work Distribution 
 
