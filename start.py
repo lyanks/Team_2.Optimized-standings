@@ -54,7 +54,8 @@ def main():
     print(f"Технічна команда: {run_cmd}\n")
     print("Зачекайте 3-5 секунд, поки сервер запуститься")
 
-    print('http://localhost:8501')
+    try:
+        print('http://localhost:8501')
     except KeyboardInterrupt:
         print("Зупинка роботи...")
     except subprocess.CalledProcessError as e:
