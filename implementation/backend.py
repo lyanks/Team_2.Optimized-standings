@@ -23,7 +23,7 @@ def read_matches(path: str) -> dict:
 
 
 def ranking_table(matches: dict, all_teams: set, coef = 0.85) -> dict:
-    # COEF = 0.85
+
     num_of_command = len(all_teams)
     base_bonus = (1 - coef)/num_of_command
 
