@@ -1,3 +1,4 @@
+'''visualisation'''
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
@@ -5,9 +6,7 @@ import math
 import pandas as pd
 import os
 
-# ==========================================
-# CUSTOM CSS & CONFIG (STYLING)
-# ==========================================
+
 st.set_page_config(
     page_title="Tournament PageRank",
     page_icon="🏆",
@@ -30,9 +29,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# LOGIC (PAGERANK & LAYOUT)
-# ==========================================
+
 
 @st.cache_data 
 def calculate_pagerank(matches_data, teams_tuple, damping=0.85, epsilon=1e-8):
@@ -101,9 +98,7 @@ def get_layout(scores, radii):
         
     return pos
 
-# ==========================================
-# PLOTLY GRAPH
-# ==========================================
+
 
 def create_stylish_graph(scores, matches, pos, radii):
     fig = go.Figure()
@@ -163,11 +158,7 @@ def create_stylish_graph(scores, matches, pos, radii):
     )
     return fig
 
-# ==========================================
-# MAIN APP & DATA LOADING
-# ==========================================
 
-# --- STATE MANAGEMENT UTILS ---
 def increment_idx():
     if st.session_state.idx < st.session_state.max_matches:
         st.session_state.idx += 1
@@ -186,7 +177,7 @@ def end_idx():
 with st.sidebar:
     st.title("🏆 Setup")
     
-    # 1. Автоматичне завантаження (якщо є змінна середовища)
+    
     target_filename = os.getenv("CSV_FILENAME")
     data_folder = "/app/data"
     auto_df = None
@@ -196,30 +187,28 @@ with st.sidebar:
         if os.path.exists(file_path):
             try:
                 auto_df = pd.read_csv(file_path)
-                # Показуємо повідомлення, тільки якщо не завантажено ручний файл
-                # Але тут просто зберігаємо df, виведемо інфо пізніше
+
             except Exception as e:
                 st.error(f"Error loading {target_filename}: {e}")
     
-    # 2. Ручне завантаження (ПОКАЗУЄМО ЗАВЖДИ)
-    # Змінено: Тепер це не в блоці else. Користувач може будь-коли змінити файл.
+
     uploaded_file = st.file_uploader("Upload NEW Match CSV", type=['csv'])
     
-    # Інформація про поточне джерело
+
     if uploaded_file is None and auto_df is not None:
          st.sidebar.info(f"📂 Using auto-loaded file: **{target_filename}**")
          st.sidebar.caption("Upload a new file above to override.")
     elif uploaded_file is not None:
-         st.sidebar.success("📂 Using uploaded file!")
+         st.sidebar.success("Using uploaded file!")
 
     st.markdown("---")
     st.markdown("**Controls:** Use buttons to replay.")
     st.info("Built with Streamlit & Plotly")
 
-# --- ВИЗНАЧЕННЯ ПРІОРИТЕТУ ДАНИХ ---
+
 df = None
 
-# Пріоритет: Ручне завантаження > Автоматичне завантаження
+
 if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
@@ -228,13 +217,13 @@ if uploaded_file is not None:
 elif auto_df is not None:
     df = auto_df
 
-# --- MAIN CONTENT ---
+# main
 col_title, col_logo = st.columns([3, 1])
 with col_title:
     st.title("Tournament PageRank Analytics")
 
 if df is not None:
-    # Валідація колонок
+
     if len(df.columns) >= 2:
         raw_matches = list(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1].astype(str)))
     else:
@@ -243,7 +232,7 @@ if df is not None:
     
     total_matches = len(raw_matches)
     
-    # Скидання стану при зміні даних (автоматично завдяки hash)
+
     data_hash = hash(tuple(raw_matches))
     if 'last_hash' not in st.session_state or st.session_state.last_hash != data_hash:
         st.session_state.last_hash = data_hash
@@ -261,7 +250,7 @@ if df is not None:
     with c3: st.button("Next ▶", on_click=increment_idx)
     with c4: st.button("End ⏩", on_click=end_idx)
 
-    # --- CALCULATION ---
+
     current_step = st.session_state.idx
     current_matches = raw_matches[:current_step]
     
@@ -271,7 +260,7 @@ if df is not None:
     
     scores = calculate_pagerank(current_matches, tuple(sorted(list(teams))))
     
-    # Radii
+
     vals = list(scores.values())
     radii = {}
     if vals:
@@ -282,7 +271,7 @@ if df is not None:
             
     pos = get_layout(scores, radii)
 
-    # --- DASHBOARD ---
+
     m1, m2, m3 = st.columns(3)
     m1.metric("Matches Played", f"{current_step} / {total_matches}")
     m2.metric("Active Teams", len(teams))
