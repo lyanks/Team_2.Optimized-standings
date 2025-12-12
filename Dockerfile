@@ -1,19 +1,25 @@
-# instal python
-FROM python:3.13-slim
+# install python (краще 3.11 для стабільності бібліотек)
+FROM python:3.11-slim
 
-# install git
-RUN apt-get update && apt-get install -y git && apt-get clean
+# install git and curl
+RUN apt-get update && apt-get install -y git curl && apt-get clean
 
-# got to directory app
+# go to directory app
 WORKDIR /app
 
-# clone repo to docher inside app
-RUN git clone https://github.com/lyanks/Team_2.Optimized-standings.git .
+# copy local files to docker inside app (ЗАМІСТЬ GIT CLONE)
+COPY . .
 
 # install python deps
 RUN pip install --no-cache-dir -r requirements.txt
+# про всяк випадок додаємо бібліотеки для сайту
+RUN pip install --no-cache-dir streamlit plotly pandas numpy
 
+# create folders
 RUN mkdir -p /app/data /app/frames
 
-# Run file
-CMD ["python", "main.py"]
+# expose port
+EXPOSE 8501
+
+# Run web app
+CMD ["streamlit", "run", "web_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
