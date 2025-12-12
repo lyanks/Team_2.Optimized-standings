@@ -1,31 +1,30 @@
-# **Optimized Tournament Standings**
+# **Optimized Tournament Standings(Web App)**
 
-The goal of this project is to apply graph-based techniques to create a fair and accurate tournament ranking system. Every match is represented as an edge connecting two teams, and each team is represented as a node in the graph. We use a **modified PageRank algorithm** to adjust for opponent strength, so a team's ranking rises more when they defeat a strong team than when they defeat a weak one.
+The goal of this project is to create a fair and accurate tournament ranking system using graph theory. Instead of a simple point system, we treat the tournament as a network where every match is an edge connecting two teams.
 
-This approach aims to develop a more equitable ranking system and package it in a portable **Docker environment**, making it easy to run on any computer.
+We utilize a modified PageRank algorithm to calculate "Authority Scores". The core assumption is simple: a win against a strong opponent should be worth more than a win against a weak one.
+
+This project has evolved into a full Interactive Web Application packaged in a portable Docker environment, allowing for dynamic analysis of tournament data.
 
 ---
 
 ## Features
 
-- Compute tournament standings based on match results.  
-- Adjust team rankings using a PageRank algorithm.  
-- Docker setup for easy deployment.  
-- Command-line interface (CLI) for interaction.  
-- Step-by-step visualization of standings.
+- Interactive Visualization: A force-directed graph (powered by Plotly) where you can zoom, pan, and hover to see team details.
+- Time Travel (Replay Mode): A slider to step through the tournament match-by-match and watch how rankings evolve in real-time. 
+- Fair Ranking Algorithm: Implementation of PageRank adapted for sports (Loser pays Winner).
+- Zero-Config Deployment: Fully automated setup via Docker and a Python launcher script.
 
 ---
 ## Project Structure
 
 ```text
 .
-├── Dockerfile             # Docker configuration
-├── start.py               # CLI Orchestrator script
-├── implementation/
-│   ├── alg.py             # PageRank logic
-│   └── visual.py          # Matplotlib visualization
-├── data/                  # Input CSV files
-└── output/                # Resulting frames and images
+├── Dockerfile             # Docker configuration (Streamlit + Python env)
+├── start.py               # Launcher script (Builds & Runs Docker)
+├── web_app.py             # Main Application Logic (UI + Algorithm)
+├── data/                  # Directory for input CSV files
+└── requirements.txt       # Python dependencies
 ```
 
 ## How to Run the Program
@@ -38,43 +37,36 @@ Docker Desktop (or Docker Engine) installed and running.
 You should also give it access to modify and read your files.
 
 
-1. Download the `start.py` and `Dockerfile` from this repository.
-2. Ensure `start.py` and the `Dockerfile` are in the same local directory.
-3. Place your input data file (e.g., input_data.txt) in a seperate folder on your local system.
-4. Open a terminal in the directory where `start.py` and `Dockerfile` are.
-5. Run the program interactively:
-```bash
+1. Clone this repository or download start.py, Dockerfile, web_app.py, and requirements.txt.
+2. Open a terminal in the project directory.
+3. Run the launcher.
 python3 start.py
-```
-6. The script will ask you to enter the full path to your input file:
-```
-Введи повний шлях до файлу:
-Шлях до файлу: [ENTER THE ABSOLUTE PATH TO YOUR INPUT FILE HERE]
-```
-7. The script will display the HTTP link where your web interface is running
-
-
+4. The script will ask for the path to your CSV file.
+Введи повний шлях до CSV файлу:
+> /path/to/your/matches.csv
+5. Wait for the Docker build to finish. The script will automatically attempt to open the web app in your browser at: http://localhost:8501
 
 
 ## Input & Output
 
 **Input:**  
 
-The program expects a CSV file containing match history.
-To avoid duplicates or formatting conflicts, each row must follow the format:
-```csv
+The application expects a CSV file containing match history. Format: Winner,Loser (headers are optional but recommended).
+
+Example (data/matches.csv):
 Winner,Loser
-Teem A,Teem B
-Teem B,Teem C
-Teem C,Teem A
+Team A,Team B
+Team B,Team C
+Team C,Team A
+Giant Killer,The Boss
 ```
 
 **Output:**  
 
-After completing the PageRank iterations, the algorithm returns a dictionary containing the final team ratings.
-This dictionary is sorted in descending order and passed to a visualization function, which generates a clean, readable table and prints it to the console.
-
-User will receive on his local directory photos of progress itteration as well as the final visual respresentation of final team ratings.
+Instead of static files, the application provides an Interactive Dashboard:
+Interaction Graph: Visualizes the network of wins/losses. Node size represents the team's strength; color indicates their rank tier.
+Live Leaderboard: A sorted table showing "Dominance Points" for each team.
+Metrics: Real-time stats on active teams and total matches played.
 
 ---
 
