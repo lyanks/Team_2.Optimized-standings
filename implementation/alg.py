@@ -30,17 +30,13 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
     teams_list = list(teams)
     team_idx = {t: i for i, t in enumerate(teams_list)}
 
-    # Ініціалізація рівномірно
     scores = np.ones(n) / n
 
-    # Будуємо матрицю переходів
-    # Якщо A переміг B, то B "передає" свій рейтинг A
     out_degree = {t: 0 for t in teams}
 
     for loser, winners in matches_dict.items():
         out_degree[loser] = len(winners)
 
-    # PageRank ітерації
     while True:
         new_scores = np.ones(n) * (1 - damping) / n
 
@@ -53,7 +49,6 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
                     winner_idx = team_idx[winner]
                     new_scores[winner_idx] += contribution
 
-        # Для команд без поразок - розподіляємо рівномірно
         dangling_sum = 0
         for t in teams:
             if t not in matches_dict or len(matches_dict.get(t, set())) == 0:
@@ -67,13 +62,12 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
         if delta < epsilon:
             break
 
-    # Нормалізуємо
     scores = scores / scores.sum()
 
     return {teams_list[i]: scores[i] for i in range(n)}
 
 def ranking_table(matches: dict, all_teams: set, coef = 0.85) -> dict:
-    # COEF = 0.85
+
     num_of_command = len(all_teams)
     base_bonus = (1 - coef)/num_of_command
 
