@@ -38,33 +38,25 @@ st.markdown("""
 def calculate_pagerank(matches_data, teams_tuple, damping=0.85, epsilon=1e-8):
     """
     Розраховує PageRank (while loop convergence).
-    Адаптовано під вхідний формат списку кортежів (Winner, Loser).
     """
     teams = list(teams_tuple)
     n = len(teams)
     if n == 0: return {}
 
-    # --- ПІДГОТОВКА ДАНИХ (Адаптація під твій код) ---
-    # Перетворюємо список [(Winner, Loser)] -> {Loser: {Winners...}}
     matches_dict = {}
     for w, l in matches_data:
         if l not in matches_dict:
             matches_dict[l] = set()
         matches_dict[l].add(w)
     
-    # --- ТВІЙ АЛГОРИТМ ---
     teams_list = list(teams)
     team_idx = {t: i for i, t in enumerate(teams_list)}
 
-    # Ініціалізація рівномірно
     scores = np.ones(n) / n
-
-    # Рахуємо out_degree (скільки разів команда програла)
     out_degree = {t: 0 for t in teams}
     for loser, winners in matches_dict.items():
         out_degree[loser] = len(winners)
 
-    # PageRank ітерації
     while True:
         new_scores = np.ones(n) * (1 - damping) / n
 
@@ -77,10 +69,8 @@ def calculate_pagerank(matches_data, teams_tuple, damping=0.85, epsilon=1e-8):
                     winner_idx = team_idx[winner]
                     new_scores[winner_idx] += contribution
 
-        # Для команд без поразок (dangling nodes) - розподіляємо рівномірно
         dangling_sum = 0
         for t in teams:
-            # Якщо команда нікому не програла, вона "dangling" в контексті loser->winner графа
             if t not in matches_dict or len(matches_dict.get(t, set())) == 0:
                 dangling_sum += scores[team_idx[t]]
 
@@ -92,9 +82,7 @@ def calculate_pagerank(matches_data, teams_tuple, damping=0.85, epsilon=1e-8):
         if delta < epsilon:
             break
 
-    # Нормалізуємо (про всяк випадок)
     scores = scores / scores.sum()
-
     return {teams_list[i]: scores[i] for i in range(n)}
 
 @st.cache_data
@@ -120,7 +108,6 @@ def get_layout(scores, radii):
 def create_stylish_graph(scores, matches, pos, radii):
     fig = go.Figure()
     
-    # Edges
     edge_x, edge_y = [], []
     for w, l in matches:
         if w in pos and l in pos:
@@ -136,7 +123,6 @@ def create_stylish_graph(scores, matches, pos, radii):
         opacity=0.5
     ))
     
-    # Nodes
     node_x, node_y, node_text, node_size, node_color = [], [], [], [], []
     
     for team, score in scores.items():
@@ -200,7 +186,7 @@ def end_idx():
 with st.sidebar:
     st.title("🏆 Setup")
     
-    # 1. Docker Env Loading
+    # 1. Автоматичне завантаження (якщо є змінна середовища)
     target_filename = os.getenv("CSV_FILENAME")
     data_folder = "/app/data"
     auto_df = None
@@ -210,28 +196,37 @@ with st.sidebar:
         if os.path.exists(file_path):
             try:
                 auto_df = pd.read_csv(file_path)
-                st.success(f"Loaded: {target_filename}")
+                # Показуємо повідомлення, тільки якщо не завантажено ручний файл
+                # Але тут просто зберігаємо df, виведемо інфо пізніше
             except Exception as e:
                 st.error(f"Error loading {target_filename}: {e}")
     
-    # 2. Manual Upload
-    uploaded_file = None
-    if auto_df is None:
-        uploaded_file = st.file_uploader("Upload Match CSV", type=['csv'])
+    # 2. Ручне завантаження (ПОКАЗУЄМО ЗАВЖДИ)
+    # Змінено: Тепер це не в блоці else. Користувач може будь-коли змінити файл.
+    uploaded_file = st.file_uploader("Upload NEW Match CSV", type=['csv'])
     
+    # Інформація про поточне джерело
+    if uploaded_file is None and auto_df is not None:
+         st.sidebar.info(f"📂 Using auto-loaded file: **{target_filename}**")
+         st.sidebar.caption("Upload a new file above to override.")
+    elif uploaded_file is not None:
+         st.sidebar.success("📂 Using uploaded file!")
+
     st.markdown("---")
     st.markdown("**Controls:** Use buttons to replay.")
     st.info("Built with Streamlit & Plotly")
 
-# --- DATA SOURCE DECISION ---
+# --- ВИЗНАЧЕННЯ ПРІОРИТЕТУ ДАНИХ ---
 df = None
-if auto_df is not None:
-    df = auto_df
-elif uploaded_file is not None:
+
+# Пріоритет: Ручне завантаження > Автоматичне завантаження
+if uploaded_file is not None:
     try:
         df = pd.read_csv(uploaded_file)
     except Exception as e:
-        st.error(f"Error reading CSV: {e}")
+        st.error(f"Error reading uploaded CSV: {e}")
+elif auto_df is not None:
+    df = auto_df
 
 # --- MAIN CONTENT ---
 col_title, col_logo = st.columns([3, 1])
@@ -239,15 +234,16 @@ with col_title:
     st.title("Tournament PageRank Analytics")
 
 if df is not None:
+    # Валідація колонок
     if len(df.columns) >= 2:
         raw_matches = list(zip(df.iloc[:, 0].astype(str), df.iloc[:, 1].astype(str)))
     else:
-        st.error("CSV must have at least 2 columns")
+        st.error("CSV must have at least 2 columns (Winner, Loser)")
         st.stop()
     
     total_matches = len(raw_matches)
     
-    # State Init
+    # Скидання стану при зміні даних (автоматично завдяки hash)
     data_hash = hash(tuple(raw_matches))
     if 'last_hash' not in st.session_state or st.session_state.last_hash != data_hash:
         st.session_state.last_hash = data_hash
@@ -273,7 +269,6 @@ if df is not None:
     for w, l in current_matches:
         teams.add(w); teams.add(l)
     
-    # Виклик оновленої функції
     scores = calculate_pagerank(current_matches, tuple(sorted(list(teams))))
     
     # Radii
@@ -308,7 +303,6 @@ if df is not None:
         if scores:
             df_res = pd.DataFrame(list(scores.items()), columns=["Team", "Score"])
             
-            # Points formatting
             multiplier = 10000
             df_res["Score"] = (df_res["Score"] * multiplier).astype(int)
             
