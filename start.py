@@ -8,7 +8,7 @@ import sys
 
 def main():
     '''main func'''
-    print("=== 🏆 Tournament Optimized-standings ===\n")
+    print("=== Tournament Optimized-standings ===\n")
 
     print("Введи повний шлях до CSV файлу:")
     raw_input = input("Шлях: ").strip()
@@ -17,10 +17,10 @@ def main():
     path = os.path.abspath(input_datafile)
 
     if not os.path.exists(path):
-        print(f"❌ Помилка: Файлу '{path}' не існує.")
+        print(f"Помилка: Файлу '{path}' не існує.")
         return
     if not os.path.isfile(path):
-        print(f"❌ Помилка: '{path}' не є файлом.")
+        print(f"Помилка: '{path}' не є файлом.")
         return
 
     host_data_dir = os.path.dirname(path)
@@ -39,14 +39,9 @@ def main():
     try:
         subprocess.run(shlex.split(build_cmd), check=True)
     except subprocess.CalledProcessError:
-        print("❌ Помилка створення Docker образу.")
+        print("Помилка створення Docker образу.")
         return
 
-
-    # ВАЖЛИВО:
-    # -p 8501:8501 -> Відкриває порт для сайту
-    # -e CSV_FILENAME -> Передає ім'я файлу всередину Python-коду
-    # -v ... -> Монтує папку з твоїм файлом у папку /app/data в контейнері
     run_cmd = (
         f'docker run --rm '
         f'-p 8501:8501 '
