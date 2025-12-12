@@ -5,10 +5,6 @@ import math
 import os
 import csv
 
-# ==========================================
-# PAGERANK АЛГОРИТМ
-# ==========================================
-
 def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
     """
     Розраховує PageRank для команд на основі перемог.
@@ -21,17 +17,13 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
     teams_list = list(teams)
     team_idx = {t: i for i, t in enumerate(teams_list)}
 
-    # Ініціалізація рівномірно
     scores = np.ones(n) / n
 
-    # Будуємо матрицю переходів
-    # Якщо A переміг B, то B "передає" свій рейтинг A
     out_degree = {t: 0 for t in teams}
 
     for loser, winners in matches_dict.items():
         out_degree[loser] = len(winners)
 
-    # PageRank ітерації
     while True:
         new_scores = np.ones(n) * (1 - damping) / n
 
@@ -44,7 +36,6 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
                     winner_idx = team_idx[winner]
                     new_scores[winner_idx] += contribution
 
-        # Для команд без поразок - розподіляємо рівномірно
         dangling_sum = 0
         for t in teams:
             if t not in matches_dict or len(matches_dict.get(t, set())) == 0:
@@ -58,15 +49,11 @@ def calculate_pagerank(matches_dict, teams, damping=0.85, epsilon=1e-8):
         if delta < epsilon:
             break
 
-    # Нормалізуємо
     scores = scores / scores.sum()
 
     return {teams_list[i]: scores[i] for i in range(n)}
 
 
-# ==========================================
-# СТИЛЬ
-# ==========================================
 STYLE = {
     "bg": "#FADEC9",
     "arrow_color": "#1a1a1a",
@@ -79,16 +66,13 @@ def get_team_color(rank_ratio):
     """Колір на основі рангу (0 = топ, 1 = низ)"""
 
     if rank_ratio < 0.33:
-        # Топ-команди: зелений (раніше був жовтий)
-        return {"inner": "#7DFF7A", "outer": "#1F8A0A"}  # зелений
+        return {"inner": "#7DFF7A", "outer": "#1F8A0A"} 
 
     elif rank_ratio < 0.66:
-        # Середні команди: тепер ЖОВТИЙ замість оранжевого
-        return {"inner": "#FFE66D", "outer": "#E1B800"}  # жовтий
+        return {"inner": "#FFE66D", "outer": "#E1B800"}  
 
     else:
-        # Нижні команди: червоний (замінено замість фіолетового)
-        return {"inner": "#FF4C4C", "outer": "#8A0000"}  # червоний
+        return {"inner": "#FF4C4C", "outer": "#8A0000"} 
 
 def draw_sphere(ax, center, radius, colors, zorder=5):
     """Малює сферу з градієнтом"""
@@ -208,7 +192,6 @@ def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
     ax.axis('off')
     ax.set_aspect('equal')
 
-    # Межі
     all_x = [p[0] for p in coords.values()]
     all_y = [p[1] for p in coords.values()]
 
@@ -225,17 +208,14 @@ def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
     ax.set_xlim(x_min, x_max)
     ax.set_ylim(y_min, y_max)
 
-    # Заголовок
     ax.text((x_min + x_max) / 2, y_max - 5, "Tournament PageRank",
             ha='center', va='top', fontsize=20, fontweight='bold',
             color=STYLE["text_color"])
 
-    # Ранги
     sorted_teams = sorted(scores.keys(), key=lambda t: scores[t], reverse=True)
     n = len(sorted_teams)
     rank_map = {t: i / max(n - 1, 1) for i, t in enumerate(sorted_teams)}
 
-    # Портал і нові вузли
     portal_x = x_max - 60
 
     if new_teams and len(new_teams) > 0:
@@ -264,7 +244,6 @@ def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
                                [line_start[1], line_end[1]],
                                '--', color=STYLE["portal_color"], lw=1.5, alpha=0.5, zorder=16)
 
-    # Стрілки
     for idx, (winner, loser) in enumerate(history_matches):
         if winner in coords and loser in coords:
             p1, p2 = coords[winner], coords[loser]
@@ -292,7 +271,6 @@ def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
             )
             ax.add_patch(arrow)
 
-    # Сфери
     for team in sorted(scores.keys(), key=lambda t: radii[t]):
         p = coords[team]
         r = radii[team]
@@ -306,7 +284,6 @@ def draw_frame(ax, scores, history_matches, coords, radii, total_matches,
                fontsize=STYLE["font_size"], fontweight='bold',
                color=STYLE["text_color"], zorder=20)
 
-    # Підпис
     if is_final_static:
         ax.text((x_min + x_max) / 2, y_min + 20, "🏆 FINAL RANKING 🏆",
                 ha='center', fontsize=16, fontweight='bold', color='#2c3e50')
@@ -365,7 +342,6 @@ def run_visualization(csv_path="data/test_matches.csv"):
             matches_dict[loser] = set()
         matches_dict[loser].add(winner)
 
-        # Реальний PageRank
         current_scores = calculate_pagerank(matches_dict, all_teams)
 
         radii = compute_radii(current_scores)
@@ -384,14 +360,12 @@ def run_visualization(csv_path="data/test_matches.csv"):
         fname = os.path.join(output_dir, f"step_{i+1:03d}.png")
         plt.savefig(fname, dpi=120, bbox_inches='tight', facecolor=STYLE["bg"])
 
-        # Виводимо рейтинг
         print(f"Match {i+1}: {winner} → {loser}")
         sorted_scores = sorted(current_scores.items(), key=lambda x: x[1], reverse=True)
         for rank, (team, score) in enumerate(sorted_scores, 1):
             print(f"  {rank}. {team}: {score*100:.2f}%")
         print()
 
-    # Фінальний кадр
     print("=" * 50)
     print("FINAL RANKING:")
     print("=" * 50)
