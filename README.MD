@@ -51,11 +51,8 @@ python3 start.py
 Введи повний шлях до файлу:
 Шлях до файлу: [ENTER THE ABSOLUTE PATH TO YOUR INPUT FILE HERE]
 ```
-7. When completed Docker running, the script will indicate where the results are saved:
-```
-Результати будуть збережені у локальній теці: [PATH_TO_OUTPUT_DIRECTORY]
-Завершено. Результати (frames) у теці: [PATH_TO_OUTPUT_DIRECTORY]
-```
+7. The script will display the HTTP link where your web interface is running
+
 
 
 
