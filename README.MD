@@ -54,7 +54,7 @@ python3 start.py
 7. When completed Docker running, the script will indicate where the results are saved:
 ```
 Результати будуть збережені у локальній теці: [PATH_TO_OUTPUT_DIRECTORY]
-✅ Завершено. Результати (frames) у теці: [PATH_TO_OUTPUT_DIRECTORY]
+Завершено. Результати (frames) у теці: [PATH_TO_OUTPUT_DIRECTORY]
 ```
 
 
