@@ -32,21 +32,22 @@ This project has evolved into a full Interactive Web Application packaged in a p
 Prerequisites:
 You must have the following software installed on your system:
 
+Python 3 (The project script ```start.py``` is written in Python).
 Python 3 (The project script start.py is written in Python).
 Docker Desktop (or Docker Engine) installed and running.
 You should also give it access to modify and read your files.
 
 
-1. Clone this repository or download start.py, Dockerfile, web_app.py, and requirements.txt.
+1. Download ```start.py```, ```Dockerfile```.
 2. Open a terminal in the project directory.
 3. Run the launcher.
 python3 start.py
 4. The script will ask for the path to your CSV file.
-Введи повний шлях до CSV файлу:
+```Введи повний шлях до CSV файлу:```
 > /path/to/your/matches.csv
-5. Wait for the Docker build to finish. The script will automatically attempt to open the web app in your browser at: http://localhost:8501
+5. Wait for the Docker build to finish. The script will automatically attempt to open the web app in your browser at: ```http://localhost:8501```
 
-
+--
 ## Input & Output
 
 **Input:**  
