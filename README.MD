@@ -47,13 +47,13 @@ python3 start.py
 > /path/to/your/matches.csv
 5. Wait for the Docker build to finish. The script will automatically attempt to open the web app in your browser at: ```http://localhost:8501```
 
---
+
 ## Input & Output
 
 **Input:**  
 
 The application expects a CSV file containing match history. Format: Winner,Loser (headers are optional but recommended).
-
+```csv
 Example (data/matches.csv):
 Winner,Loser
 Team A,Team B
