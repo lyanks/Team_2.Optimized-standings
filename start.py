@@ -1,68 +1,85 @@
-'''start of whole program'''
 import os
 import subprocess
 import shlex
+import sys
+
 
 def main():
-    '''main'''
-    print("Введи повний шлях до файлу:")
-    input_datafile = input("Шлях до файлу: ").strip()
+    print("=== 🏆 Tournament System Launcher ===\n")
+    
+    # 1. Запитуємо шлях до файлу
+    print("Введи повний шлях до CSV файлу:")
+    raw_input = input("Шлях: ").strip()
+    
+    # Очищаємо шлях від лапок, якщо вони є (Windows часто додає їх)
+    input_datafile = raw_input.strip('"').strip("'")
+    path = os.path.abspath(input_datafile)
 
-    # if not os.path.isfile(input_datafile):
-    #     print("Файлу не існує! Перевір шлях і спробуй ще раз.")
-    #     return
-
+    # 2. Перевірки
     if not os.path.exists(path):
-        raise argparse.ArgumentTypeError(f"Файлу '{path}' не існує. Перевірте шлях.")
-
+        print(f"❌ Помилка: Файлу '{path}' не існує.")
+        return
     if not os.path.isfile(path):
-        raise argparse.ArgumentTypeError(f"'{path}' не є файлом. Вкажіть коректний файл.")
+        print(f"❌ Помилка: '{path}' не є файлом.")
+        return
 
-    if not os.access(path, os.R_OK):
-        raise argparse.ArgumentTypeError(f"Файл '{path}' не можна прочитати. Немає дозволу.")
+    # Отримуємо папку, де лежить файл, та саме ім'я файлу
+    host_data_dir = os.path.dirname(path)     # Наприклад: C:/Users/Documents
+    csv_filename = os.path.basename(path)     # Наприклад: matches.csv
 
-    input_datafile_dir = os.path.dirname(input_datafile)
-    input_datafile = os.path.abspath(input_datafile)
-
+    # Папка для результатів (куди зберігати картинки, якщо треба)
     local_output_dir = os.path.join(os.getcwd(), 'output')
     os.makedirs(local_output_dir, exist_ok=True)
-    print(f"Результати будуть збережені у локальній теці: {local_output_dir}")
 
+    # Шляхи всередині Docker контейнера
     container_data_dir = "/app/data"
     container_frames_dir = "/app/frames"
 
-    container_input_path = container_data_dir
+    print(f"\n📂 Вхідний файл: {csv_filename}")
+    print(f"🔨 Створюю Docker image...")
 
-    print(f"\nСтворюю Docker image... з файлом {input_datafile}")
-
+    # 3. Build (Збірка образу)
     build_cmd = 'docker build -t standings .'
-
     try:
         subprocess.run(shlex.split(build_cmd), check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"Помилка створення Docker образу. {e}")
+    except subprocess.CalledProcessError:
+        print("❌ Помилка створення Docker образу.")
         return
 
+    # 4. Run (Запуск контейнера)
+    # ВАЖЛИВО:
+    # -p 8501:8501 -> Відкриває порт для сайту
+    # -e CSV_FILENAME -> Передає ім'я файлу всередину Python-коду
+    # -v ... -> Монтує папку з твоїм файлом у папку /app/data в контейнері
     run_cmd = (
         f'docker run --rm '
-        '--name standings_proc '
-        f'-v "{input_datafile_dir}":"{container_input_path}":ro '
+        f'-p 8501:8501 '
+        f'-e CSV_FILENAME="{csv_filename}" '
+        f'-v "{host_data_dir}":"{container_data_dir}":ro '
         f'-v "{local_output_dir}":"{container_frames_dir}" '
-        f'standings')
+        f'standings'
+    )
 
-    print("\nЗапускаю Docker контейнер...")
-    print(f"Команда: {run_cmd}")
+    print("\n🚀 Запускаю веб-сайт...")
+    print(f"Технічна команда: {run_cmd}\n")
+    print("⏳ Зачекайте 3-5 секунд, поки сервер запуститься...")
 
+    # Спроба відкрити браузер автоматично
     try:
+        # Даємо контейнеру трохи часу на старт
+        if sys.platform == 'win32':
+            # На Windows запускаємо команду і не блокуємо консоль відразу
+             subprocess.Popen(['start', 'http://localhost:8501'], shell=True)
+        else:
+             pass # На Linux/Mac можна додати webbrowser.open пізніше
+        
+        # Запускаємо сам контейнер (ця команда "зависає", поки працює сайт)
         subprocess.run(run_cmd, shell=True, check=True)
+
+    except KeyboardInterrupt:
+        print("\n🛑 Зупинка роботи...")
     except subprocess.CalledProcessError as e:
-        print("Помилка запуску Docker контейнера:")
-        print(e)
-
-    print(f"\n✅ Завершено. Результати (frames) у теці: {local_output_dir}")
-
-    # show visualiztion from output directory
-
+        print(f"Помилка Docker: {e}")
 
 if __name__ == "__main__":
     main()
